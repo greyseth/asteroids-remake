@@ -6,7 +6,6 @@ require('chunks');
 
 -- Game variables
 paused = false;
-isDead = false;
 gameOver = false;
 
 -- Debug variables
@@ -21,6 +20,8 @@ function love.load()
 
     screenWidth = love.graphics.getWidth()
     screenHeight = love.graphics.getHeight()
+
+    if not enablePlayer2 then playerPos = {x = 0, y = 0} end
 end
 
 function love.keypressed(key)
@@ -80,12 +81,7 @@ function love.draw()
             end
         end
 
-        if not isDead then
-            if checkPlayerCollision(collider) then 
-                playerDie(); 
-                createParticles(accPos.x, accPos.y); 
-            end
-        end
+        checkPlayerCollision(collider)
     end
 
     for _, toRemove in ipairs(removeChunks) do

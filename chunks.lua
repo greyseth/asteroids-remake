@@ -15,7 +15,7 @@ chunkMaxLifetime = 20;
 chunkSpawnRate = 1;
 nextSpawnTime = 0.5;
 
-showCollider = true;
+showCollider = false;
 
 function createChunk(posX, posY, direction, size)
     local chunkSize = 0;
