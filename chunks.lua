@@ -1,4 +1,5 @@
 chunks = {};
+chunkColliders = {};
 
 chunkSpeedMin = 35;
 chunkSpeedMax = 150;
@@ -12,6 +13,8 @@ jaggedMax = 20;
 
 chunkSpawnRate = 1;
 nextSpawnTime = 0.5;
+
+showCollider = true;
 
 function createChunk(posX, posY, direction)
     local chunkSize = love.math.random(chunkSizeMin, chunkSizeMax);
@@ -60,8 +63,7 @@ end
 function spawnChunks(dt, playerPos)
     if love.timer.getTime() > nextSpawnTime then
         -- Spawns at the edge of the screen
-        -- local edgePick = love.math.random(4); -- 1 left, 2 top, 3 right, 4 bottom
-        local edgePick = love.math.random(4);
+        local edgePick = love.math.random(4); -- 1 left, 2 top, 3 right, 4 bottom
         local spawnPos = {x = 0, y = 0};
         local spawnDir = 0;
 
@@ -104,7 +106,7 @@ function drawChunks()
         centerPoint = {x = xSum / #chunk.vertices, y = ySum / #chunk.vertices};
 
         -- Draws and rotates chunk
-        for i, chunkPoint in ipairs(chunk.vertices) do
+        for ii, chunkPoint in ipairs(chunk.vertices) do
             local xRotated = math.cos(chunk.rotation) * (chunkPoint.x - centerPoint.x) - math.sin(chunk.rotation) * (chunkPoint.y - centerPoint.y) + centerPoint.x;
             local yRotated =  math.sin(chunk.rotation) * (chunkPoint.x - centerPoint.x) + math.cos(chunk.rotation) * (chunkPoint.y - centerPoint.y) + centerPoint.y;
 
@@ -112,7 +114,29 @@ function drawChunks()
             table.insert(chunkPoints, yRotated);
         end
 
+        local xMin = 10000; local xMax = -10000;
+        local yMin = 10000; local yMax = -10000;
+        for i = 1, #chunkPoints do
+            if i % 2 ~= 0 then
+                if chunkPoints[i] < xMin then xMin = chunkPoints[i] end
+                if chunkPoints[i] > xMax then xMax = chunkPoints[i] end 
+            else
+                if chunkPoints[i] < yMin then yMin = chunkPoints[i] end
+                if chunkPoints[i] > yMax then yMax = chunkPoints[i] end
+            end
+        end
+
+        chunkColliders[i] = {xMin = xMin, xMax = xMax, yMin = yMin, yMax = yMax};
+
         local chunkShape = love.physics.newPolygonShape(chunkPoints);
         love.graphics.polygon('line', chunkShape:getPoints());
+    end
+
+    if showCollider then
+        for i, collider in ipairs(chunkColliders) do
+            love.graphics.setColor(0, 1, 0);
+            love.graphics.rectangle('line', collider.xMin, collider.yMin, (collider.xMax-collider.xMin), (collider.yMax-collider.yMin));
+            love.graphics.setColor(255, 255, 255);
+        end
     end
 end

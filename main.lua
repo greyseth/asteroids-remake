@@ -41,15 +41,11 @@ function love.load()
     playerSize = {width = 20, height = 30};
 end
 
+function love.keypressed(key)
+    if key == 'escape' then paused = not paused end
+end
+
 function love.update(dt)
-    -- #region Misc
-
-    if love.keyboard.isDown('escape') then
-        paused = not paused;
-    end
-
-    -- #endregion
-
     if paused then
         return;
     end
@@ -107,6 +103,7 @@ function love.update(dt)
         nextFireTime = love.timer.getTime() + 1 / fireRate;
     end
 
+    -- Bullet movement
     local removeBullets = {};
     for i, bullet in ipairs(bullets) do
         if bullet.lifetime >= bulletMaxLifetime then table.insert(removeBullets, i); goto continue; end
@@ -123,16 +120,59 @@ function love.update(dt)
         ::continue::
     end
 
-    for _, toRemove in ipairs(removeBullets) do
-        table.remove(bullets, toRemove);
-    end
-
     -- #endregion
 
     -- #region Misc updates
 
     moveChunks(dt);
     spawnChunks(dt, accPos);
+
+    -- Chunk collision detection
+    -- local chunkColliders2 = {};
+    -- for i, chunk in ipairs(chunks) do
+    --     local chunkPoints = {};
+        
+    --     for ii, chunkPoint in ipairs(chunk.vertices) do
+    --         -- local xRotated = math.cos(chunk.rotation) * (chunkPoint.x - centerPoint.x) - math.sin(chunk.rotation) * (chunkPoint.y - centerPoint.y) + centerPoint.x;
+    --         -- local yRotated =  math.sin(chunk.rotation) * (chunkPoint.x - centerPoint.x) + math.cos(chunk.rotation) * (chunkPoint.y - centerPoint.y) + centerPoint.y;
+
+    --         table.insert(chunkPoints, chunkPoint.x);
+    --         table.insert(chunkPoints, chunkPoint.y);
+    --     end
+
+    --     local xMin = 10000; local xMax = -10000;
+    --     local yMin = 10000; local yMax = -10000;
+    --     for ii = 1, #chunkPoints do
+    --         if ii % 2 ~= 0 then
+    --             if chunkPoints[ii] < xMin then xMin = chunkPoints[ii] end
+    --             if chunkPoints[ii] > xMax then xMax = chunkPoints[ii] end 
+    --         else
+    --             if chunkPoints[ii] < yMin then yMin = chunkPoints[ii] end
+    --             if chunkPoints[ii] > yMax then yMax = chunkPoints[ii] end
+    --         end
+    --     end
+
+    --     chunkColliders2[i] = {xMin = xMin, xMax = xMax, yMin = yMin, yMax = yMax};
+    -- end
+
+    -- for i, bullet in ipairs(bullets) do
+    --     for _, removed in ipairs(removeBullets) do 
+    --         if i == removed then goto continue end 
+    --     end
+
+    --     for _, collider in ipairs(chunkColliders2) do
+    --         if bullet.x >= collider.xMin and bullet.x <= collider.xMax
+    --             and bullet.y >= collider.yMin and bullet.y <= collider.yMax
+    --         then table.insert(removeBullets, i) end
+    --     end
+
+    --     ::continue::
+    -- end
+
+    -- Bullet removal
+    for _, toRemove in ipairs(removeBullets) do
+        table.remove(bullets, toRemove);
+    end
 
     if isMoving then
         if fireTimeCounter < fireShowInterval then
@@ -144,18 +184,7 @@ function love.update(dt)
     -- #endregion
 end
 
--- function love.keypressed(key, scancode, isrepeat)
---     if key == 'f' then
---         local accPos = {x = screenWidth / 2 + playerPos.x, y = screenHeight / 2 + playerPos.y};
---         createChunk(accPos.x, accPos.y, playerRotation);
---     end
--- end
-
 function love.draw() 
-    if paused then
-        return;
-    end
-
     -- Debug variables
     love.graphics.print("Current Speed: "..moveSpeed, 0, 0);
     love.graphics.print("Angle: "..playerRotation, 0, 15);
@@ -194,6 +223,30 @@ function love.draw()
 
     -- chunks
     drawChunks();
+    
+    local removeChunks = {};
+    for i, collider in ipairs(chunkColliders) do
+        for ii, bullet in ipairs(bullets) do
+            if bullet.pos.x >= collider.xMin and bullet.pos.x <= collider.xMax
+                and bullet.pos.y >= collider.yMin and bullet.pos.y <= collider.yMax
+            then
+                table.insert(removeChunks, i);
+                bullets[ii] = {
+                    id = bullet.id,
+                    pos = bullet.pos,
+                    angle = bullet.angle,
+                    lifetime = 100000
+                }
+            end
+        end
+    end
+
+    for _, toRemove in ipairs(removeChunks) do
+        -- TODO: Create particle effects, and spawn smaller chunks
+
+        table.remove(chunks, toRemove);
+        table.remove(chunkColliders, toRemove);
+    end
 end
 
 function applyRotation(raw)
