@@ -4,7 +4,7 @@ acceleration = 120;
 deceleration = 170;
 moveSpeed = 0;
 
-playerPos = {x = 0, y = 0};
+playerPos = {x = -400, y = 0};
 accPos = {x = 0, y = 0};
 
 playerRotation = 0;
@@ -21,7 +21,7 @@ fireTimeCounter = 0;
 
 -- Player 2
 moveSpeed2 = 0;
-playerPos2 = {x = 0, y = 0};
+playerPos2 = {x = 400, y = 0};
 accPos2 = {x = 0, y = 0};
 playerRotation2 = 0;
 

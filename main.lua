@@ -80,7 +80,12 @@ function love.draw()
             end
         end
 
-        if checkPlayerCollision(collider) then playerDie() end
+        if not isDead then
+            if checkPlayerCollision(collider) then 
+                playerDie(); 
+                createParticles(accPos.x, accPos.y); 
+            end
+        end
     end
 
     for _, toRemove in ipairs(removeChunks) do
