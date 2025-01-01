@@ -5,12 +5,12 @@ chunkSpeedMax = 150;
 chunkRotateSpeedMin = 0.25;
 chunkRotateSpeedMax = 2.2;
 chunkSizeMin = 20;
-chunkSizeMax = 85;
+chunkSizeMax = 45;
 chunkVerticesMin = 5;
 chunkVerticesMax = 8;
 jaggedMax = 20;
 
-chunkSpawnRate = 1.2;
+chunkSpawnRate = 1;
 nextSpawnTime = 0.5;
 
 function createChunk(posX, posY, direction)
@@ -59,7 +59,31 @@ end
 
 function spawnChunks(dt, playerPos)
     if love.timer.getTime() > nextSpawnTime then
-        -- createChunk(love.graphics.getWidth()/2, love.graphics.getHeight()/2, math.sqrt(playerPos.x*playerPos.x + playerPos.y*playerPos.y));
+        -- Spawns at the edge of the screen
+        -- local edgePick = love.math.random(4); -- 1 left, 2 top, 3 right, 4 bottom
+        local edgePick = love.math.random(4);
+        local spawnPos = {x = 0, y = 0};
+        local spawnDir = 0;
+
+        if edgePick == 1 then
+            spawnPos = {x = -chunkSizeMax, y = love.math.random(-chunkSizeMax, love.graphics.getHeight()+chunkSizeMax)};
+            spawnDir = love.math.random(1.1, 1.4);
+        elseif edgePick == 2 then
+            spawnPos = {x = love.math.random(-chunkSizeMax, love.graphics.getWidth()+chunkSizeMax), y = -chunkSizeMax};
+            spawnDir = love.math.random(2.8, 3.1);
+        elseif edgePick == 3 then
+            spawnPos = {x = love.graphics.getWidth()+chunkSizeMax, y = love.math.random(-chunkSizeMax, love.graphics.getHeight()+chunkSizeMax)}
+            spawnDir = -love.math.random(1.1, 1.4);
+        elseif edgePick == 4 then
+            spawnPos = {x = love.math.random(-chunkSizeMax, love.graphics.getWidth()+chunkSizeMax), y = love.graphics.getHeight()+chunkSizeMax};
+            spawnDir = love.math.random(-0.1, 0.1);
+        end
+
+        -- Initially to move towards where the player is
+        -- local playerDirection = {x = playerPos.x - spawnPos.x, y = playerPos.y - spawnPos.y};
+        -- createChunk(spawnPos.x, spawnPos.y, -math.deg(math.atan2(playerDirection.y, playerDirection.x)));
+
+        createChunk(spawnPos.x, spawnPos.y, spawnDir);
         nextSpawnTime = love.timer.getTime() + 1 / chunkSpawnRate;
     end
 end
