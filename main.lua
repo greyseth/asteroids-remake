@@ -124,50 +124,9 @@ function love.update(dt)
 
     -- #region Misc updates
 
+    -- Chunk management
     moveChunks(dt);
     spawnChunks(dt, accPos);
-
-    -- Chunk collision detection
-    -- local chunkColliders2 = {};
-    -- for i, chunk in ipairs(chunks) do
-    --     local chunkPoints = {};
-        
-    --     for ii, chunkPoint in ipairs(chunk.vertices) do
-    --         -- local xRotated = math.cos(chunk.rotation) * (chunkPoint.x - centerPoint.x) - math.sin(chunk.rotation) * (chunkPoint.y - centerPoint.y) + centerPoint.x;
-    --         -- local yRotated =  math.sin(chunk.rotation) * (chunkPoint.x - centerPoint.x) + math.cos(chunk.rotation) * (chunkPoint.y - centerPoint.y) + centerPoint.y;
-
-    --         table.insert(chunkPoints, chunkPoint.x);
-    --         table.insert(chunkPoints, chunkPoint.y);
-    --     end
-
-    --     local xMin = 10000; local xMax = -10000;
-    --     local yMin = 10000; local yMax = -10000;
-    --     for ii = 1, #chunkPoints do
-    --         if ii % 2 ~= 0 then
-    --             if chunkPoints[ii] < xMin then xMin = chunkPoints[ii] end
-    --             if chunkPoints[ii] > xMax then xMax = chunkPoints[ii] end 
-    --         else
-    --             if chunkPoints[ii] < yMin then yMin = chunkPoints[ii] end
-    --             if chunkPoints[ii] > yMax then yMax = chunkPoints[ii] end
-    --         end
-    --     end
-
-    --     chunkColliders2[i] = {xMin = xMin, xMax = xMax, yMin = yMin, yMax = yMax};
-    -- end
-
-    -- for i, bullet in ipairs(bullets) do
-    --     for _, removed in ipairs(removeBullets) do 
-    --         if i == removed then goto continue end 
-    --     end
-
-    --     for _, collider in ipairs(chunkColliders2) do
-    --         if bullet.x >= collider.xMin and bullet.x <= collider.xMax
-    --             and bullet.y >= collider.yMin and bullet.y <= collider.yMax
-    --         then table.insert(removeBullets, i) end
-    --     end
-
-    --     ::continue::
-    -- end
 
     -- Bullet removal
     for _, toRemove in ipairs(removeBullets) do
