@@ -22,15 +22,15 @@ fireTimeCounter = 0;
 isDead = false;
 
 -- Misc player values
+colliderPoints = {};
+showColliderBox = true;
 playerCorpseLines = {};
 playerCorpseSpeed = 40;
 playerCorpseColor = 255;
 playerCorpseFadeSpeed = 100;
-colliderPoints = {};
-showColliderBox = false;
 
 -- Player 2
-enablePlayer2 = false;
+enablePlayer2 = true;
 
 isMoving2 = false;
 moveSpeed2 = 0;
@@ -41,6 +41,7 @@ isDead2 = false;
 nextFireTime2 = 0.3;
 playerCorpseLines2 = {};
 playerCorpseColor2 = 255;
+colliderPoints2 = {};
 
 function playerUpdate(dt)
     accPos = {x = screenWidth / 2 + playerPos.x, y = screenHeight / 2 + playerPos.y};
@@ -190,6 +191,7 @@ function playerDraw()
         local _isDead = false;
         local _playerCorpseLines = {};
         local _playerCorpseColor = 255;
+        local _colliderPoints = {};
 
         local color = {};
 
@@ -200,6 +202,7 @@ function playerDraw()
             _isDead = isDead;
             _playerCorpseLines = playerCorpseLines;
             _playerCorpseColor = playerCorpseColor;
+            _colliderPoints = colliderPoints;
 
             color = {0, 0, 128};
         else 
@@ -209,6 +212,7 @@ function playerDraw()
             _isDead = isDead2;
             _playerCorpseLines = playerCorpseLines2;
             _playerCorpseColor = playerCorpseColor2;
+            _colliderPoints = colliderPoints2;
 
             color = {128, 0, 0};
         end;
@@ -262,11 +266,13 @@ function playerDraw()
                     end
                 end
 
-                colliderPoints = {xMin = xMin, xMax = xMax, yMin = yMin, yMax = yMax};
+                _colliderPoints = {xMin = xMin, xMax = xMax, yMin = yMin, yMax = yMax};
 
                 love.graphics.setColor(0, 1, 0);
-                love.graphics.rectangle('line', colliderPoints.xMin, colliderPoints.yMin, (colliderPoints.xMax-colliderPoints.xMin), (colliderPoints.yMax-colliderPoints.yMin));
+                love.graphics.rectangle('line', _colliderPoints.xMin, _colliderPoints.yMin, (_colliderPoints.xMax-_colliderPoints.xMin), (_colliderPoints.yMax-_colliderPoints.yMin));
                 love.graphics.setColor(255, 255, 255);
+
+                if i==1 then colliderPoints = _colliderPoints else colliderPoints2 = _colliderPoints end
             end
         else
             -- Player corpse draw
@@ -344,4 +350,53 @@ function checkPlayerCollision(collider)
             end
         end
     end
+end
+
+function checkPlayerKill(bulletPos)
+    local returnValue = false;
+
+    local secondPlayer = 1;
+    if enablePlayer2 then secondPlayer = 2 end
+    for i=1, secondPlayer do
+        local _isDead = false;
+        local _accPos = {};
+        local _colliderPoints = {};
+        if i == 1 then 
+            _isDead = isDead;
+            _accPos = accPos;
+            _colliderPoints = colliderPoints;
+        else 
+            _isDead = isDead2;
+            _accPos = accPos2;
+            _colliderPoints = colliderPoints2;
+        end
+
+        if not _isDead then
+            if bulletPos.x >= _colliderPoints.xMin and bulletPos.x <= _colliderPoints.xMax
+                and bulletPos.y >= _colliderPoints.yMin and bulletPos.y <= _colliderPoints.yMax
+            then
+                local _playerCorpseLines = {};
+                
+                table.insert(_playerCorpseLines, {x1 = bottomLeft.x, y1 = bottomLeft.y, x2 = bottomRight.x, y2 = bottomRight.y, direction = love.math.random(-3, 3)});
+                table.insert(_playerCorpseLines, {x1 = bottomLeft.x, y1 = bottomLeft.y, x2 = top.x, y2 = top.y, direction = love.math.random(-3, 3)});
+                table.insert(_playerCorpseLines, {x1 = bottomRight.x, y1 = bottomRight.y, x2 = top.x, y2 = top.y, direction = love.math.random(-3, 3)});
+
+                if i == 1 then 
+                    playerCorpseLines = _playerCorpseLines;
+                    isDead = true;
+                else 
+                    playerCorpseLines2 = _playerCorpseLines;
+                    isDead2 = true;
+                end
+
+                createParticles(_accPos.x, _accPos.y);
+
+                returnValue = true;
+            else 
+                returnValue = false;
+            end
+        end
+    end
+
+    return returnValue;
 end

@@ -84,6 +84,18 @@ function love.draw()
         checkPlayerCollision(collider)
     end
 
+    -- Bullet collision detection
+    for i, bullet in ipairs(bullets) do
+        if checkPlayerKill(bullet.pos) then
+            bullets[i] = {
+                id = bullet.id,
+                pos = bullet.pos,
+                angle = bullet.angle,
+                lifetime = 100000
+            }
+        end
+    end
+
     for _, toRemove in ipairs(removeChunks) do
         local chunk = chunks[toRemove];
 
