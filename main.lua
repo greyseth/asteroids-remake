@@ -1,3 +1,4 @@
+require('particles');
 require('chunks');
 
 -- Player values
@@ -19,6 +20,12 @@ fireShowing = true;
 fireShowInterval = 0.0005;
 fireTimeCounter = 0;
 
+-- Misc player values
+playerCorpseLines = {};
+playerCorpseSpeed = 40;
+playerCorpseColor = 255;
+playerCorpseFadeSpeed = 100;
+
 -- Projectiles
 bullets = {};
 bulletSpeed = 450;
@@ -29,9 +36,11 @@ nextFireTime = 0.3;
 
 -- Game variables
 paused = false;
+isDead = false;
+gameOver = false;
 
 function love.load()
-    -- love.window.setMode(800, 600, {fullscreen = false})
+    love.window.setMode(1280, 720, {fullscreen = false})
 
     screenWidth = love.graphics.getWidth()
     screenHeight = love.graphics.getHeight()
@@ -52,55 +61,71 @@ function love.update(dt)
 
     accPos = {x = screenWidth / 2 + playerPos.x, y = screenHeight / 2 + playerPos.y};
 
-    -- #region Movement
+    if not isDead then
+        -- #region Movement
     
-    -- Rotation input & handling
-    if love.keyboard.isDown('d') then
-        playerRotation = playerRotation + rotateSpeed * dt;
-    elseif love.keyboard.isDown('a') then
-        playerRotation = playerRotation - rotateSpeed * dt;
-    end
-
-    -- Movement input
-    if love.keyboard.isDown('w') then
-        isMoving = true;
-        moveDirection = -1;
-
-        fireShowing = true;
-        fireTimeCounter = 0;
-    else isMoving = false;
-    end
-
-    -- Acceleration handling
-    if isMoving then
-        if moveSpeed < topSpeed then
-            moveSpeed = moveSpeed + acceleration * dt;
+        -- Rotation input & handling
+        if love.keyboard.isDown('d') then
+            playerRotation = playerRotation + rotateSpeed * dt;
+        elseif love.keyboard.isDown('a') then
+            playerRotation = playerRotation - rotateSpeed * dt;
         end
-    else
-        if moveSpeed > 0 then
-            moveSpeed = moveSpeed - deceleration * dt;
+
+        -- Movement input
+        if love.keyboard.isDown('w') then
+            isMoving = true;
+            moveDirection = -1;
+
+            fireShowing = true;
+            fireTimeCounter = 0;
+        else isMoving = false;
         end
-    end
 
-    -- Moves player
-    local forwardX = math.sin(playerRotation) * moveDirection;
-    local forwardY = math.cos(playerRotation) * moveDirection;
-    playerPos = {x = playerPos.x - (forwardX * moveSpeed * dt), y = playerPos.y + (forwardY * moveSpeed * dt)};
+        -- Acceleration handling
+        if isMoving then
+            if moveSpeed < topSpeed then
+                moveSpeed = moveSpeed + acceleration * dt;
+            end
+        else
+            if moveSpeed > 0 then
+                moveSpeed = moveSpeed - deceleration * dt;
+            end
+        end
 
-    -- #endregion
+        -- Moves player
+        local forwardX = math.sin(playerRotation) * moveDirection;
+        local forwardY = math.cos(playerRotation) * moveDirection;
+        playerPos = {x = playerPos.x - (forwardX * moveSpeed * dt), y = playerPos.y + (forwardY * moveSpeed * dt)};
 
-    -- #region Shooting
+        -- #endregion
 
-    -- Input handling
-    if love.keyboard.isDown("space") and love.timer.getTime() >= nextFireTime then
-        local accPos = {x = screenWidth / 2 + playerPos.x, y = screenHeight / 2 + playerPos.y};
+        -- #region Shooting
 
-        local topRaw = {x = accPos.x, y = accPos.y - (playerSize.height / 2)};
-        local top = {x = math.cos(playerRotation) * (topRaw.x - accPos.x) - math.sin(playerRotation) * (topRaw.y - accPos.y) + accPos.x, y = math.sin(playerRotation) * (topRaw.x - accPos.x) + math.cos(playerRotation) * (topRaw.y - accPos.y) + accPos.y};
+        -- Input handling
+        if love.keyboard.isDown("space") and love.timer.getTime() >= nextFireTime then
+            local accPos = {x = screenWidth / 2 + playerPos.x, y = screenHeight / 2 + playerPos.y};
 
-        table.insert(bullets, {id = table.getn(bullets)+1, pos = top, angle = playerRotation, lifetime = 0});
+            local topRaw = {x = accPos.x, y = accPos.y - (playerSize.height / 2)};
+            local top = {x = math.cos(playerRotation) * (topRaw.x - accPos.x) - math.sin(playerRotation) * (topRaw.y - accPos.y) + accPos.x, y = math.sin(playerRotation) * (topRaw.x - accPos.x) + math.cos(playerRotation) * (topRaw.y - accPos.y) + accPos.y};
 
-        nextFireTime = love.timer.getTime() + 1 / fireRate;
+            table.insert(bullets, {id = table.getn(bullets)+1, pos = top, angle = playerRotation, lifetime = 0});
+
+            nextFireTime = love.timer.getTime() + 1 / fireRate;
+        end
+
+        -- #endregion
+    else 
+        for i, line in ipairs(playerCorpseLines) do
+            playerCorpseLines[i] = {
+                x1 = line.x1 + math.sin(line.direction) * playerCorpseSpeed * dt,
+                y1 = line.y1 - math.cos(line.direction) * playerCorpseSpeed * dt,
+                x2 = line.x2 + math.sin(line.direction) * playerCorpseSpeed * dt,
+                y2 = line.y2 - math.cos(line.direction) * playerCorpseSpeed * dt,
+                direction = line.direction
+            }
+        end
+        
+        playerCorpseColor = playerCorpseColor - playerCorpseFadeSpeed * dt;
     end
 
     -- Bullet movement
@@ -120,15 +145,15 @@ function love.update(dt)
         ::continue::
     end
 
-    -- #endregion
-
     -- #region Misc updates
 
     -- Chunk management
     moveChunks(dt);
     spawnChunks(dt, accPos);
 
-    -- Bullet removal
+    -- Particle management
+    moveParticles(dt);
+
     for _, toRemove in ipairs(removeBullets) do
         table.remove(bullets, toRemove);
     end
@@ -144,13 +169,15 @@ function love.update(dt)
 end
 
 function love.draw() 
+    if gameOver then return end
+
     -- Debug variables
     love.graphics.print("Current Speed: "..moveSpeed, 0, 0);
     love.graphics.print("Angle: "..playerRotation, 0, 15);
     love.graphics.print("X: "..accPos.x.." | Y: "..accPos.y, 0, 30);
-    love.graphics.print("Time: "..love.timer.getTime().." | Next Fire Time: "..nextFireTime, 0, 45);
+    love.graphics.print(playerCorpseColor, 0, 45);
 
-    -- vertices
+    -- Player vertices
     local bottomLeftRaw = {x = accPos.x - (playerSize.width / 2), y = accPos.y + (playerSize.height/2)};
     local bottomRightRaw = {x = accPos.x + (playerSize.width / 2), y = accPos.y + (playerSize.height/2)};
     local topRaw = {x = accPos.x, y = accPos.y - (playerSize.height / 2)};
@@ -163,16 +190,25 @@ function love.draw()
     local bottomRight = applyRotation(bottomRightRaw);
     local top = applyRotation(topRaw);
     local bottom = applyRotation(bottomRaw);
-
-    -- player draw
-    local player = love.physics.newPolygonShape(bottomLeft.x, bottomLeft.y, bottomRight.x, bottomRight.y, top.x, top.y);
-    love.graphics.polygon('fill', player:getPoints());
-    if isMoving and fireShowing then 
-        love.graphics.polygon('line', 
-                applyRotation(fireBottomLeft).x, applyRotation(fireBottomLeft).y, 
-                applyRotation(fireBottomRight).x, applyRotation(fireBottomRight).y, 
-                bottom.x, bottom.y
-            );
+    
+    if not isDead then
+        -- Player draw
+        local player = love.physics.newPolygonShape(bottomLeft.x, bottomLeft.y, bottomRight.x, bottomRight.y, top.x, top.y);
+        love.graphics.polygon('fill', player:getPoints());
+        if isMoving and fireShowing then 
+            love.graphics.polygon('line', 
+                    applyRotation(fireBottomLeft).x, applyRotation(fireBottomLeft).y, 
+                    applyRotation(fireBottomRight).x, applyRotation(fireBottomRight).y, 
+                    bottom.x, bottom.y
+                );
+        end
+    else
+        -- Player corpse draw
+        for _, line in ipairs(playerCorpseLines) do
+            love.graphics.setColor(playerCorpseColor, playerCorpseColor, playerCorpseColor)
+            love.graphics.line(line.x1, line.y1, line.x2, line.y2);
+            love.graphics.setColor(255, 255, 255);
+        end
     end
 
     -- bullets draw
@@ -198,16 +234,61 @@ function love.draw()
                 }
             end
         end
+
+        if checkPlayerCollision(bottomLeft, collider) or
+            checkPlayerCollision(bottomRight, collider) or
+            checkPlayerCollision(top, collider) then
+            table.insert(playerCorpseLines, {x1 = bottomLeft.x, y1 = bottomLeft.y, x2 = bottomRight.x, y2 = bottomRight.y, direction = love.math.random(-3, 3)});
+            table.insert(playerCorpseLines, {x1 = bottomLeft.x, y1 = bottomLeft.y, x2 = top.x, y2 = top.y, direction = love.math.random(-3, 3)});
+            table.insert(playerCorpseLines, {x1 = bottomRight.x, y1 = bottomRight.y, x2 = top.x, y2 = top.y, direction = love.math.random(-3, 3)});
+
+            isDead = true;
+        end
     end
 
     for _, toRemove in ipairs(removeChunks) do
-        -- TODO: Create particle effects, and spawn smaller chunks
+        local chunk = chunks[toRemove];
 
+        -- Calculates center point
+        local centerPoint = {x = 0, y = 0};
+
+        local xSum = 0;
+        local ySum = 0;
+        for _, chunkPoint in ipairs(chunk.vertices) do
+            xSum = xSum + chunkPoint.x;
+            ySum = ySum + chunkPoint.y;
+        end
+
+        centerPoint = {x = xSum / #chunk.vertices, y = ySum / #chunk.vertices};
+
+        -- Creates smaller chunks and particles
+        local smallChunkCount = 0;
+        local smallChunkSize = 15;
+
+        if chunk.size > 30 then smallChunkCount = 3
+        elseif chunk.size > 20 then smallChunkCount = 2
+        end
+
+        for i=1, smallChunkCount do
+            createChunk(centerPoint.x, centerPoint.y, love.math.random(-3, 3), smallChunkSize);
+        end
+
+        createParticles(centerPoint.x, centerPoint.y);
+
+        -- Removes chunk
         table.remove(chunks, toRemove);
         table.remove(chunkColliders, toRemove);
     end
+
+    -- Particles
+    drawParticles();
 end
 
 function applyRotation(raw)
     return {x = math.cos(playerRotation) * (raw.x - accPos.x) - math.sin(playerRotation) * (raw.y - accPos.y) + accPos.x, y = math.sin(playerRotation) * (raw.x - accPos.x) + math.cos(playerRotation) * (raw.y - accPos.y) + accPos.y}
+end
+
+function checkPlayerCollision(playerPoint, collider)
+    return playerPoint.x >= collider.xMin and playerPoint.x <= collider.xMax
+        and playerPoint.y >= collider.yMin and playerPoint.y <= collider.yMax;
 end

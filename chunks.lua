@@ -10,14 +10,16 @@ chunkSizeMax = 45;
 chunkVerticesMin = 5;
 chunkVerticesMax = 8;
 jaggedMax = 20;
+chunkMaxLifetime = 20;
 
 chunkSpawnRate = 1;
 nextSpawnTime = 0.5;
 
 showCollider = true;
 
-function createChunk(posX, posY, direction)
-    local chunkSize = love.math.random(chunkSizeMin, chunkSizeMax);
+function createChunk(posX, posY, direction, size)
+    local chunkSize = 0;
+    if not size then chunkSize = love.math.random(chunkSizeMin, chunkSizeMax); else chunkSize = size end
     local chunkVertices = love.math.random(chunkVerticesMin, chunkVerticesMax);
     local chunkSpeed = love.math.random(chunkSpeedMin, chunkSpeedMax);
     local chunkRotateSpeed = love.math.random(chunkRotateSpeedMin, chunkRotateSpeedMax);
@@ -34,11 +36,14 @@ function createChunk(posX, posY, direction)
         table.insert(vertices, {x=posX + (chunkSize + jaggedness) * math.cos(angle), y=posY + (chunkSize + jaggedness) * math.sin(angle)});
     end
 
-    table.insert(chunks, {vertices = vertices, direction = direction, speed = chunkSpeed, rotation = 0, rotationDirection = rotationDirection, rotationSpeed = chunkRotateSpeed});
+    table.insert(chunks, {vertices = vertices, direction = direction, speed = chunkSpeed, rotation = 0, rotationDirection = rotationDirection, rotationSpeed = chunkRotateSpeed, size = chunkSize, lifetime = 0});
 end
 
 function moveChunks(dt)
+    local removeChunks = {};
     for i, chunk in ipairs(chunks) do
+        if chunk.lifetime >= chunkMaxLifetime then table.insert(removeChunks, i); goto continue; end
+        
         local newVerticesPositions = {};
 
         -- Moves each vertex
@@ -53,10 +58,18 @@ function moveChunks(dt)
             vertices = newVerticesPositions,
             direction = chunk.direction,
             speed = chunk.speed,
+            size = chunk.size,
             rotationSpeed = chunk.rotationSpeed,
             rotationDirection = chunk.rotationDirection,
             rotation = chunk.rotation + (chunk.rotationSpeed * chunk.rotationDirection) * dt,
+            lifetime = chunk.lifetime + dt
         }
+
+        ::continue::
+    end
+
+    for _, toRemove in ipairs(removeChunks) do
+        table.remove(chunks, toRemove);
     end
 end
 
