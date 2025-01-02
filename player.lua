@@ -23,7 +23,7 @@ isDead = false;
 
 -- Misc player values
 colliderPoints = {};
-showColliderBox = true;
+showColliderBox = false;
 playerCorpseLines = {};
 playerCorpseSpeed = 40;
 playerCorpseColor = 255;
@@ -290,6 +290,8 @@ function applyRotation(rotation, pos, raw)
 end
 
 function checkPlayerCollision(collider)
+    local returnValue = false;
+
     local secondPlayer = 1;
     if enablePlayer2 then secondPlayer = 2 end
     for i=1, secondPlayer do
@@ -317,10 +319,10 @@ function checkPlayerCollision(collider)
             local fireBottomLeft = {x = _accPos.x - (playerSize.width / 4), y = _accPos.y + (playerSize.height / 2)};
             local fireBottomRight = {x = _accPos.x + (playerSize.width / 4), y = _accPos.y + (playerSize.height / 2)};
 
-            bottomLeft = applyRotation(_playerRotation, _accPos, bottomLeftRaw);
-            bottomRight = applyRotation(_playerRotation, _accPos, bottomRightRaw);
-            top = applyRotation(_playerRotation, _accPos, topRaw);
-            bottom = applyRotation(_playerRotation, _accPos, bottomRaw);
+            local bottomLeft = applyRotation(_playerRotation, _accPos, bottomLeftRaw);
+            local bottomRight = applyRotation(_playerRotation, _accPos, bottomRightRaw);
+            local top = applyRotation(_playerRotation, _accPos, topRaw);
+            local bottom = applyRotation(_playerRotation, _accPos, bottomRaw);
             
             if
                 (bottomLeft.x >= collider.xMin and bottomLeft.x <= collider.xMax
@@ -347,9 +349,13 @@ function checkPlayerCollision(collider)
                 end
 
                 createParticles(_accPos.x, _accPos.y);
+
+                returnValue = true;
             end
         end
     end
+
+    return returnValue;
 end
 
 function checkPlayerKill(bulletPos)
@@ -360,18 +366,35 @@ function checkPlayerKill(bulletPos)
     for i=1, secondPlayer do
         local _isDead = false;
         local _accPos = {};
+        local _playerRotation = 0;
         local _colliderPoints = {};
         if i == 1 then 
             _isDead = isDead;
             _accPos = accPos;
+            _playerRotation = playerRotation;
             _colliderPoints = colliderPoints;
         else 
             _isDead = isDead2;
             _accPos = accPos2;
+            _playerRotation = playerRotation2;
             _colliderPoints = colliderPoints2;
         end
 
         if not _isDead then
+            -- Player vertices
+            local bottomLeftRaw = {x = _accPos.x - (playerSize.width / 2), y = _accPos.y + (playerSize.height/2)};
+            local bottomRightRaw = {x = _accPos.x + (playerSize.width / 2), y = _accPos.y + (playerSize.height/2)};
+            local topRaw = {x = _accPos.x, y = _accPos.y - (playerSize.height / 2)};
+            local bottomRaw = {x = _accPos.x, y = _accPos.y + playerSize.height};
+
+            local fireBottomLeft = {x = _accPos.x - (playerSize.width / 4), y = _accPos.y + (playerSize.height / 2)};
+            local fireBottomRight = {x = _accPos.x + (playerSize.width / 4), y = _accPos.y + (playerSize.height / 2)};
+
+            local bottomLeft = applyRotation(_playerRotation, _accPos, bottomLeftRaw);
+            local bottomRight = applyRotation(_playerRotation, _accPos, bottomRightRaw);
+            local top = applyRotation(_playerRotation, _accPos, topRaw);
+            local bottom = applyRotation(_playerRotation, _accPos, bottomRaw);
+
             if bulletPos.x >= _colliderPoints.xMin and bulletPos.x <= _colliderPoints.xMax
                 and bulletPos.y >= _colliderPoints.yMin and bulletPos.y <= _colliderPoints.yMax
             then
@@ -392,8 +415,6 @@ function checkPlayerKill(bulletPos)
                 createParticles(_accPos.x, _accPos.y);
 
                 returnValue = true;
-            else 
-                returnValue = false;
             end
         end
     end

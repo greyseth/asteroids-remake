@@ -5,14 +5,16 @@ require('particles');
 require('chunks');
 
 -- Game variables
+mainMenu = true;
 paused = false;
 gameOver = false;
+playerWon = 0;
 
 -- Debug variables
-showValues = true;
+showValues = false;
 
 function love.load()
-    local appIcon = love.image.newImageData('assets/icon.jpg');
+    local appIcon = love.image.newImageData('img/icon.jpg');
 
     love.window.setMode(1280, 720, {fullscreen = false});
     love.window.setTitle('Asteroids But Bad');
@@ -20,6 +22,10 @@ function love.load()
 
     screenWidth = love.graphics.getWidth()
     screenHeight = love.graphics.getHeight()
+
+    font = love.graphics.newFont('font/joystix.otf');
+    font:setFilter('nearest', 'nearest');
+    love.graphics.setFont(font);
 
     if not enablePlayer2 then playerPos = {x = 0, y = 0} end
 end
@@ -34,8 +40,15 @@ function love.update(dt)
     end
 
     playerUpdate(dt);
-
     bulletUpdate(dt);
+
+    if love.keyboard.isDown('1') then
+        enablePlayer2 = false;
+        restartGame();
+    elseif love.keyboard.isDown('2') then
+        enablePlayer2 = true;
+        restartGame();
+    end
 
     -- #region Misc updates
 
@@ -50,7 +63,7 @@ function love.update(dt)
 end
 
 function love.draw() 
-    if gameOver then return end
+    -- if gameOver then return end
 
     if showValues then
         -- Debug variables
@@ -81,7 +94,12 @@ function love.draw()
             end
         end
 
-        checkPlayerCollision(collider)
+        if checkPlayerCollision(collider) then
+            if not gameOver then
+                if isDead then playerWon = 2 else playerWon = 1 end
+                gameOver = true;
+            end
+        end
     end
 
     -- Bullet collision detection
@@ -93,6 +111,11 @@ function love.draw()
                 angle = bullet.angle,
                 lifetime = 100000
             }
+
+            if not gameOver then
+                if isDead then playerWon = 2 else playerWon = 1 end
+                gameOver = true;
+            end
         end
     end
 
@@ -132,4 +155,42 @@ function love.draw()
 
     -- Particles
     drawParticles();
+
+    -- Text and UI elements
+    if gameOver then
+        local textScale = 4;
+        local message = 'GAME OVER';
+
+        if enablePlayer2 then message = 'PLAYER '..playerWon..'\nWINS' end
+
+        love.graphics.printf(message, 0, screenHeight/2, screenWidth/textScale, 'center', 0, textScale, textScale);
+    end
+end
+
+function restartGame()
+    local playerX = 0;
+    if enablePlayer2 then playerX = -400; end
+
+    playerPos = {x = playerX, y = 0};
+    playerPos2 = {x = 400, y = 0};
+
+    moveSpeed = 0;
+    moveSpeed2 = 0;
+    playerRotation = 0;
+    playerRotation2 = 0;
+
+    isDead = false;
+    isDead2 = false;
+
+    playerCorpseLines = {};
+    playerCorpseColor = 255;
+    playerCorpseLines2 = {};
+    playerCorpseColor2 = 255;
+
+    chunks = {};
+    chunkColliders = {};
+
+    particles = {};
+
+    gameOver = false;
 end

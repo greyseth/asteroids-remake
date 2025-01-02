@@ -10,10 +10,13 @@ chunkSizeMax = 45;
 chunkVerticesMin = 5;
 chunkVerticesMax = 8;
 jaggedMax = 20;
-chunkMaxLifetime = 20;
+chunkMaxLifetime = 35;
 
 chunkSpawnRate = 1;
 nextSpawnTime = 0.5;
+
+chunkRateIncreaseSpeed = 0.25;
+maxChunkSpawnRate = 2;
 
 showCollider = false;
 
@@ -70,6 +73,10 @@ function moveChunks(dt)
 
     for _, toRemove in ipairs(removeChunks) do
         table.remove(chunks, toRemove);
+    end
+
+    if chunkSpawnRate < maxChunkSpawnRate then
+        chunkSpawnRate = chunkSpawnRate + chunkRateIncreaseSpeed * dt;
     end
 end
 
