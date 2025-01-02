@@ -4,6 +4,8 @@ require('projectiles');
 require('particles');
 require('chunks');
 
+require('sounds');
+
 -- Game variables
 mainMenu = true;
 paused = false;
@@ -28,10 +30,14 @@ function love.load()
     love.graphics.setFont(font);
 
     if not enablePlayer2 then playerPos = {x = 0, y = 0} end
+
+    initializeSounds();
 end
 
 function love.keypressed(key)
-    if key == 'escape' then paused = not paused end
+    if key == 'escape' then 
+        paused = not paused 
+    end
 end
 
 function love.update(dt)
@@ -46,6 +52,8 @@ function love.update(dt)
     if paused or mainMenu then
         return;
     end
+
+    if gameOver then fireSound:stop() end;
 
     playerUpdate(dt);
     bulletUpdate(dt);
@@ -89,6 +97,9 @@ function love.draw()
             if bullet.pos.x >= collider.xMin and bullet.pos.x <= collider.xMax
                 and bullet.pos.y >= collider.yMin and bullet.pos.y <= collider.yMax
             then
+                explosionSound:seek(0, 'seconds');
+                explosionSound:play();
+
                 table.insert(removeChunks, i);
                 bullets[ii] = {
                     id = bullet.id,
@@ -101,6 +112,7 @@ function love.draw()
 
         if checkPlayerCollision(collider) then
             if not gameOver then
+                deathSound:play();
                 if isDead then playerWon = 2 else playerWon = 1 end
                 gameOver = true;
             end
@@ -110,6 +122,8 @@ function love.draw()
     -- Bullet collision detection
     for i, bullet in ipairs(bullets) do
         if checkPlayerKill(bullet.pos) then
+            deathSound:play();
+
             bullets[i] = {
                 id = bullet.id,
                 pos = bullet.pos,
@@ -127,35 +141,37 @@ function love.draw()
     for _, toRemove in ipairs(removeChunks) do
         local chunk = chunks[toRemove];
 
-        -- Calculates center point
-        local centerPoint = {x = 0, y = 0};
+        if chunk then
+            -- Calculates center point
+            local centerPoint = {x = 0, y = 0};
 
-        local xSum = 0;
-        local ySum = 0;
-        for _, chunkPoint in ipairs(chunk.vertices) do
-            xSum = xSum + chunkPoint.x;
-            ySum = ySum + chunkPoint.y;
+            local xSum = 0;
+            local ySum = 0;
+            for _, chunkPoint in ipairs(chunk.vertices) do
+                xSum = xSum + chunkPoint.x;
+                ySum = ySum + chunkPoint.y;
+            end
+
+            centerPoint = {x = xSum / #chunk.vertices, y = ySum / #chunk.vertices};
+
+            -- Creates smaller chunks and particles
+            local smallChunkCount = 0;
+            local smallChunkSize = 15;
+
+            if chunk.size > 35 then smallChunkCount = 3
+            elseif chunk.size > 20 then smallChunkCount = 2
+            end
+
+            for i=1, smallChunkCount do
+                createChunk(centerPoint.x, centerPoint.y, love.math.random(-3, 3), smallChunkSize);
+            end
+
+            createParticles(centerPoint.x, centerPoint.y);
+
+            -- Removes chunk
+            table.remove(chunks, toRemove);
+            table.remove(chunkColliders, toRemove);
         end
-
-        centerPoint = {x = xSum / #chunk.vertices, y = ySum / #chunk.vertices};
-
-        -- Creates smaller chunks and particles
-        local smallChunkCount = 0;
-        local smallChunkSize = 15;
-
-        if chunk.size > 30 then smallChunkCount = 3
-        elseif chunk.size > 20 then smallChunkCount = 2
-        end
-
-        for i=1, smallChunkCount do
-            createChunk(centerPoint.x, centerPoint.y, love.math.random(-3, 3), smallChunkSize);
-        end
-
-        createParticles(centerPoint.x, centerPoint.y);
-
-        -- Removes chunk
-        table.remove(chunks, toRemove);
-        table.remove(chunkColliders, toRemove);
     end
 
     -- Particles
@@ -173,6 +189,8 @@ function love.draw()
 end
 
 function restartGame()
+    selectSound:play();
+
     local playerX = 0;
     if enablePlayer2 then playerX = -400; end
 

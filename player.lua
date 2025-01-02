@@ -118,10 +118,17 @@ function playerUpdate(dt)
 
             -- Acceleration handling
             if _isMoving then
+                if not fireSound:isPlaying() then
+                    fireSound:play();
+                    fireSound:setLooping(true);
+                end
+
                 if _moveSpeed < topSpeed then
                     _moveSpeed = _moveSpeed + acceleration * dt;
                 end
             else
+                fireSound:stop();
+
                 if _moveSpeed > 0 then
                     _moveSpeed = _moveSpeed - deceleration * dt;
                 end
@@ -138,6 +145,9 @@ function playerUpdate(dt)
 
             -- Input handling
             if love.keyboard.isDown(shootButton) and love.timer.getTime() >= _nextFireTime then
+                shootSound:seek(0, 'seconds');
+                shootSound:play();
+
                 local topRaw = {x = _accPos.x, y = _accPos.y - (playerSize.height / 2)};
                 local top = {x = math.cos(_playerRotation) * (topRaw.x - _accPos.x) - math.sin(_playerRotation) * (topRaw.y - _accPos.y) + _accPos.x, y = math.sin(_playerRotation) * (topRaw.x - _accPos.x) + math.cos(_playerRotation) * (topRaw.y - _accPos.y) + _accPos.y};
 
