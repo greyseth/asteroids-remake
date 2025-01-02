@@ -35,20 +35,20 @@ function love.keypressed(key)
 end
 
 function love.update(dt)
-    if paused then
+    if love.keyboard.isDown('1') and not paused then
+        enablePlayer2 = false;
+        restartGame();
+    elseif love.keyboard.isDown('2') and not paused then
+        enablePlayer2 = true;
+        restartGame();
+    end
+
+    if paused or mainMenu then
         return;
     end
 
     playerUpdate(dt);
     bulletUpdate(dt);
-
-    if love.keyboard.isDown('1') then
-        enablePlayer2 = false;
-        restartGame();
-    elseif love.keyboard.isDown('2') then
-        enablePlayer2 = true;
-        restartGame();
-    end
 
     -- #region Misc updates
 
@@ -63,7 +63,12 @@ function love.update(dt)
 end
 
 function love.draw() 
-    -- if gameOver then return end
+    if mainMenu then
+        love.graphics.printf('ASTEROIDS, BUT BAD', 0, screenHeight/2-(font:getHeight()*5), screenWidth/5, 'center', 0, 5, 5);
+        love.graphics.printf('Press 1 for singleplayer and press 2 for multiplayer', 0, screenHeight/2, screenWidth/2, 'center', 0, 2, 2)
+
+        return;
+    end
 
     if showValues then
         -- Debug variables
@@ -163,7 +168,7 @@ function love.draw()
 
         if enablePlayer2 then message = 'PLAYER '..playerWon..'\nWINS' end
 
-        love.graphics.printf(message, 0, screenHeight/2, screenWidth/textScale, 'center', 0, textScale, textScale);
+        love.graphics.printf(message, 0, screenHeight/2-(font:getHeight()*textScale), screenWidth/textScale, 'center', 0, textScale, textScale);
     end
 end
 
@@ -173,6 +178,8 @@ function restartGame()
 
     playerPos = {x = playerX, y = 0};
     playerPos2 = {x = 400, y = 0};
+    colliderPoints = {};
+    colliderPoints2 = {};
 
     moveSpeed = 0;
     moveSpeed2 = 0;
@@ -192,5 +199,8 @@ function restartGame()
 
     particles = {};
 
+    bullets = {};
+
     gameOver = false;
+    mainMenu = false;
 end

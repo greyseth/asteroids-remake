@@ -247,32 +247,32 @@ function playerDraw()
                     );
             end
 
-            if showColliderBox then
-                -- Collider visualization (im not proud of this method...)
-                local playerPoints = {};
-                playerPoints[1] = bottomLeft.x; playerPoints[2] = bottomLeft.y;
-                playerPoints[3] = bottomRight.x; playerPoints[4] = bottomRight.y;
-                playerPoints[5] = top.x; playerPoints[6] = top.y;
+            -- Collider visualization (im not proud of this method...)
+            local playerPoints = {};
+            playerPoints[1] = bottomLeft.x; playerPoints[2] = bottomLeft.y;
+            playerPoints[3] = bottomRight.x; playerPoints[4] = bottomRight.y;
+            playerPoints[5] = top.x; playerPoints[6] = top.y;
 
-                local xMin = 10000; local xMax = -10000;
-                local yMin = 10000; local yMax = -10000;
-                for i = 1, #playerPoints do
-                    if i % 2 ~= 0 then
-                        if playerPoints[i] < xMin then xMin = playerPoints[i] end
-                        if playerPoints[i] > xMax then xMax = playerPoints[i] end 
-                    else
-                        if playerPoints[i] < yMin then yMin = playerPoints[i] end
-                        if playerPoints[i] > yMax then yMax = playerPoints[i] end
-                    end
+            local xMin = 10000; local xMax = -10000;
+            local yMin = 10000; local yMax = -10000;
+            for i = 1, #playerPoints do
+                if i % 2 ~= 0 then
+                    if playerPoints[i] < xMin then xMin = playerPoints[i] end
+                    if playerPoints[i] > xMax then xMax = playerPoints[i] end 
+                else
+                    if playerPoints[i] < yMin then yMin = playerPoints[i] end
+                    if playerPoints[i] > yMax then yMax = playerPoints[i] end
                 end
+            end
 
-                _colliderPoints = {xMin = xMin, xMax = xMax, yMin = yMin, yMax = yMax};
+            _colliderPoints = {xMin = xMin, xMax = xMax, yMin = yMin, yMax = yMax};
 
+            if i==1 then colliderPoints = _colliderPoints else colliderPoints2 = _colliderPoints end
+
+            if showColliderBox then
                 love.graphics.setColor(0, 1, 0);
                 love.graphics.rectangle('line', _colliderPoints.xMin, _colliderPoints.yMin, (_colliderPoints.xMax-_colliderPoints.xMin), (_colliderPoints.yMax-_colliderPoints.yMin));
                 love.graphics.setColor(255, 255, 255);
-
-                if i==1 then colliderPoints = _colliderPoints else colliderPoints2 = _colliderPoints end
             end
         else
             -- Player corpse draw
@@ -395,6 +395,7 @@ function checkPlayerKill(bulletPos)
             local top = applyRotation(_playerRotation, _accPos, topRaw);
             local bottom = applyRotation(_playerRotation, _accPos, bottomRaw);
 
+            print(_colliderPoints.xMin);
             if bulletPos.x >= _colliderPoints.xMin and bulletPos.x <= _colliderPoints.xMax
                 and bulletPos.y >= _colliderPoints.yMin and bulletPos.y <= _colliderPoints.yMax
             then
